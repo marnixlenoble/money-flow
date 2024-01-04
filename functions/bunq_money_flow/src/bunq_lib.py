@@ -1,5 +1,6 @@
 from decimal import Decimal
-from os.path import isfile
+from time import sleep
+from typing import Protocol, Optional
 
 from bunq.sdk.context.api_context import ApiContext
 from bunq.sdk.context.api_environment_type import ApiEnvironmentType
@@ -8,13 +9,21 @@ from bunq.sdk.model.generated.endpoint import MonetaryAccount, Payment
 from bunq.sdk.model.generated.object_ import Amount, Pointer
 
 
+class ApiContextLoader(Protocol):
+    def save(self, api_context: ApiContext):
+        ...
+
+    def load(self) -> Optional[ApiContext]:
+        ...
+
+
 class BunqLib:
     def __init__(
         self,
         api_key,
         environment_type,
         device_description,
-        api_context_file_path,
+        api_context_loader: ApiContextLoader,
     ):
         self.api_key = api_key
         self.environment_type = (
@@ -23,25 +32,26 @@ class BunqLib:
             else ApiEnvironmentType.SANDBOX
         )
         self.device_description = device_description
-        self.api_context_file_path = api_context_file_path
-        self.is_connected = False
+        self.api_context_loader = api_context_loader
 
+        self.is_connected = False
         self._memoized_accounts = None
 
     def connect(self):
-        if isfile(self.api_context_file_path):
-            pass  # Config is already present
-        else:
-            ApiContext.create(
+        api_context = self.api_context_loader.load()
+        if api_context is None:
+            api_context = ApiContext.create(
                 self.environment_type, self.api_key, self.device_description
-            ).save(self.api_context_file_path)
+            )
+            self.api_context_loader.save(api_context)
 
-        api_context = ApiContext.restore(self.api_context_file_path)
-        api_context.ensure_session_active()
-        api_context.save(self.api_context_file_path)
+        session_changed = api_context.ensure_session_active()
+        if session_changed:
+            self.api_context_loader.save(api_context)
 
         BunqContext.load_api_context(api_context)
         self.is_connected = True
+        return api_context.to_json()
 
     def make_payment(
         self,
@@ -50,17 +60,30 @@ class BunqLib:
         description: str,
         iban: str,
         iban_name: str,
-        account_id: int
+        account_id: int,
     ):
         if not self.is_connected:
             raise Exception("Not connected. Please call connect first")
 
-        Payment.create(
-            amount=Amount("{:.2f}".format(amount), "EUR"),
-            counterparty_alias=Pointer("IBAN", iban, name=iban_name),
-            description=description,
-            monetary_account_id=account_id,
-        )
+        max_retries = 5
+        retry_delay = 10
+        retry_count = 0
+
+        while retry_count < max_retries:
+            try:
+                Payment.create(
+                    amount=Amount("{:.2f}".format(amount), "EUR"),
+                    counterparty_alias=Pointer("IBAN", iban, name=iban_name),
+                    description=description,
+                    monetary_account_id=account_id,
+                )
+                sleep(2)
+                break
+            except Exception as e:
+                print(f"Payment failed: {e}")
+                retry_count += 1
+                print(f"Retrying... ({retry_count}/{max_retries})")
+                sleep(retry_delay)
 
     def get_balance_by_id(self, *, id_: int):
         if not self.is_connected:

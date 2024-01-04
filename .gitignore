@@ -8,6 +8,7 @@
 .env.production
 bunq-sandbox.conf
 bunq.conf
+firebase-debug.log
 firebase-config.json
 firebase-config-development.json
 .firebaserc
