@@ -10,3 +10,4 @@ bunq-sandbox.conf
 bunq.conf
 firebase-config.json
 firebase-config-development.json
+.firebaserc
