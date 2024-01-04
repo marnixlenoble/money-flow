@@ -78,6 +78,9 @@ class BunqLib:
 
         accounts = self._memoized_accounts
         for account in accounts:
+            if account.is_all_field_none():
+                continue
+
             referenced_object = account.get_referenced_object()
             for alias in referenced_object.alias:
                 if alias.type_ == "IBAN" and alias.value == iban:

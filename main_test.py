@@ -1,8 +1,8 @@
 from decimal import Decimal
 from unittest.mock import Mock, MagicMock, call
 
-from main import AutomateAllocations
-from src.allocation import Settings, Allocation
+from functions.bunq_money_flow.src.allocation import Settings, Allocation
+from functions.bunq_money_flow.src.money_flow import AutomateAllocations
 
 default_payment_kwargs = {
     "description": "test description",
@@ -11,7 +11,7 @@ default_payment_kwargs = {
 }
 
 
-class TestMinimumAllocation:
+class TestTopUpAllocation:
     def setup_method(self):
         self.bunq_ = MagicMock()
         self.store_ = MagicMock()
@@ -23,7 +23,7 @@ class TestMinimumAllocation:
             bunq=self.bunq_, store=self.store_
         )
 
-    def test_when_minimum_is_greater_than_remainder_expect_payment_with_remainder_as_amount(
+    def test_when_value_is_greater_than_remainder_expect_payment_with_remainder_as_amount(
         self,
     ):
         self.bunq_.make_payment = Mock()
@@ -44,7 +44,7 @@ class TestMinimumAllocation:
             amount=Decimal("500.00"), account_id=0, **default_payment_kwargs
         )
 
-    def test_when_minimum_is_smaller_than_remainder_expect_payment_with_difference(
+    def test_when_value_is_smaller_than_remainder_expect_payment_with_difference(
         self,
     ):
         self.bunq_.make_payment = Mock()
@@ -86,6 +86,54 @@ class TestMinimumAllocation:
         self.automate_allocations.run()
 
         self.bunq_.make_payment.assert_not_called()
+
+    def test_when_maximum_amount_is_higher_than_amount_expect_regular_payment(
+        self,
+    ):
+        self.bunq_.make_payment = Mock()
+        self.store_.get_allocations = Mock(
+            return_value=[
+                Allocation(
+                    value=Decimal("2000.00"),
+                    type="top_up",
+                    maximum_amount=Decimal("200.00"),
+                    **default_payment_kwargs,
+                )
+            ]
+        )
+        self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("1900.00"))
+
+        self.automate_allocations.run()
+
+        self.bunq_.make_payment.assert_any_call(
+            amount=Decimal("100.00"),
+            **default_payment_kwargs,
+            account_id=0,
+        )
+
+    def test_when_maximum_amount_is_lower_than_amount_expect_maximum_payment(
+        self,
+    ):
+        self.bunq_.make_payment = Mock()
+        self.store_.get_allocations = Mock(
+            return_value=[
+                Allocation(
+                    value=Decimal("2000.00"),
+                    type="top_up",
+                    maximum_amount=Decimal("50.00"),
+                    **default_payment_kwargs,
+                )
+            ]
+        )
+        self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("1900.00"))
+
+        self.automate_allocations.run()
+
+        self.bunq_.make_payment.assert_any_call(
+            amount=Decimal("50.00"),
+            **default_payment_kwargs,
+            account_id=0,
+        )
 
 
 class TestPercentageAllocation:
@@ -187,6 +235,52 @@ class TestPercentageAllocation:
         self.automate_allocations.run()
 
         self.bunq_.make_payment.assert_not_called()
+
+    def test_when_maximum_amount_is_higher_than_amount_expect_regular_payment(
+        self,
+    ):
+        self.bunq_.make_payment = Mock()
+        self.store_.get_allocations = Mock(
+            return_value=[
+                Allocation(
+                    value=Decimal("100.00"),
+                    type="percentage",
+                    maximum_amount=Decimal("600.00"),
+                    **default_payment_kwargs,
+                )
+            ]
+        )
+
+        self.automate_allocations.run()
+
+        self.bunq_.make_payment.assert_called_with(
+            amount=Decimal("500.00"),
+            **default_payment_kwargs,
+            account_id=0,
+        )
+
+    def test_when_maximum_amount_is_lower_than_amount_expect_maximum_payment(
+        self,
+    ):
+        self.bunq_.make_payment = Mock()
+        self.store_.get_allocations = Mock(
+            return_value=[
+                Allocation(
+                    value=Decimal("100.00"),
+                    type="percentage",
+                    maximum_amount=Decimal("200.00"),
+                    **default_payment_kwargs,
+                )
+            ]
+        )
+
+        self.automate_allocations.run()
+
+        self.bunq_.make_payment.assert_called_with(
+            amount=Decimal("200.00"),
+            **default_payment_kwargs,
+            account_id=0,
+        )
 
 
 class TestFixedAllocation:
