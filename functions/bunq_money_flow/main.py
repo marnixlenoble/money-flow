@@ -6,16 +6,22 @@ from bunq.sdk.context.api_context import ApiContext
 from dotenv import load_dotenv
 from firebase_admin import initialize_app, firestore
 from firebase_functions import scheduler_fn
+from firebase_functions.params import StringParam
 from google.cloud.secretmanager_v1 import SecretManagerServiceClient
 
 from src import BunqLib, FireStore, AutomateAllocations
 
 load_dotenv()
 
-PROJECT_ID = os.getenv("PROJECT_ID")
+PROJECT_ID = os.getenv("GCLOUD_PROJECT")
 
 ENVIRONMENT = os.getenv("ENVIRONMENT")
 DEVICE_DESCRIPTION = os.getenv("DESCRIPTION")
+
+VPC_CONNECTOR_NAME = StringParam("VPC_CONNECTOR_NAME")
+BUNQ_CONFIG_SECRET_NAME = StringParam("BUNQ_CONFIG_SECRET_NAME")
+BUNQ_API_KEY_SECRET_NAME = StringParam("BUNQ_API_KEY_SECRET_NAME")
+REGION = StringParam("REGION")
 
 initialize_app()
 
@@ -78,11 +84,14 @@ class ApiContextSecretLoader:
 
 @scheduler_fn.on_schedule(
     schedule="0 12 22-26 * *",
-    region="europe-west1",
-    secrets=["BUNQ_API_KEY", "BUNQ_CONF"],
+    region=REGION,
+    secrets=[BUNQ_API_KEY_SECRET_NAME.value, BUNQ_CONFIG_SECRET_NAME.value],
+    vpc_connector=VPC_CONNECTOR_NAME,
+    vpc_connector_egress_settings="ALL_TRAFFIC",
+    ingress="ALLOW_INTERNAL_ONLY",
 )
 def run_sorter(_event: scheduler_fn.ScheduledEvent):
-    api_key = os.environ.get("BUNQ_API_KEY")
+    api_key = os.environ.get(BUNQ_API_KEY_SECRET_NAME.value)
     client = firestore.client()
     store_ = FireStore(client=client)
 
@@ -90,7 +99,9 @@ def run_sorter(_event: scheduler_fn.ScheduledEvent):
         api_key=api_key,
         environment_type=ENVIRONMENT,
         device_description=DEVICE_DESCRIPTION,
-        api_context_loader=ApiContextSecretLoader(PROJECT_ID, "BUNQ_CONF"),
+        api_context_loader=ApiContextSecretLoader(
+            PROJECT_ID, BUNQ_CONFIG_SECRET_NAME.value
+        ),
     )
     bunq_.connect()
 
