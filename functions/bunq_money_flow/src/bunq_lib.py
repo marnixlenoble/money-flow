@@ -51,7 +51,6 @@ class BunqLib:
 
         BunqContext.load_api_context(api_context)
         self.is_connected = True
-        return api_context.to_json()
 
     def make_payment(
         self,
