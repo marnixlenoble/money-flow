@@ -17,7 +17,7 @@ class ApiContextLoader(Protocol):
         ...
 
 
-class BunqAdapter:
+class BunqClient:
     def __init__(
         self,
         api_key,

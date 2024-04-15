@@ -2,7 +2,7 @@ from decimal import Decimal
 from typing import Optional
 
 from .allocation import Allocation
-from .money_flow import BankAdapter
+from .money_flow import BankClient
 
 
 def _check_minimum_amount(
@@ -28,7 +28,7 @@ def _check_remainder(amount: Decimal, *, remainder: Decimal) -> Decimal:
 
 
 def top_up_strategy(
-    allocation: Allocation, remainder: Decimal, *, bank: BankAdapter
+    allocation: Allocation, remainder: Decimal, *, bank: BankClient
 ) -> Decimal:
     balance = bank.get_balance_by_iban(iban=allocation.iban)
     amount = allocation.value - balance

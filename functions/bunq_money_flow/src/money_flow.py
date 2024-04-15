@@ -3,11 +3,10 @@ from itertools import groupby
 from typing import Protocol, Optional
 
 from .allocation import FireStore
-from .bunq_lib import BunqAdapter
 from .strategies import all_strategies
 
 
-class BankAdapter(Protocol):
+class BankClient(Protocol):
     def make_payment(
         self,
         *,
@@ -27,8 +26,8 @@ class BankAdapter(Protocol):
 
 
 class AutomateAllocations:
-    def __init__(self, bunq: BunqAdapter, store: FireStore):
-        self.bunq = bunq
+    def __init__(self, bank_client: BankClient, store: FireStore):
+        self.bank_client = bank_client
         self.store = store
 
     def run(self):
@@ -37,7 +36,9 @@ class AutomateAllocations:
 
         main_account_settings = self.store.get_main_account_settings()
         cutoff = main_account_settings.minimum
-        main_account_balance = self.bunq.get_balance_by_id(id_=main_account_settings.id)
+        main_account_balance = self.bank_client.get_balance_by_id(
+            id_=main_account_settings.id
+        )
         if main_account_balance < cutoff:
             return
 
@@ -66,10 +67,10 @@ class AutomateAllocations:
         amount = strategy(
             allocation,
             original_remainder if original_remainder else remainder,
-            bunq=self.bunq,
+            bunq=self.bank_client,
         )
         if amount > 0:
-            self.bunq.make_payment(
+            self.bank_client.make_payment(
                 amount=amount,
                 description=allocation.description,
                 iban=allocation.iban,

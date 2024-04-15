@@ -20,7 +20,7 @@ class TestTopUpAllocation:
         )
         self.bunq_.get_balance_by_id = Mock(return_value=Decimal("1000.00"))
         self.automate_allocations = AutomateAllocations(
-            bunq=self.bunq_, store=self.store_
+            bank_client=self.bunq_, store=self.store_
         )
 
     def test_when_value_is_greater_than_remainder_expect_payment_with_remainder_as_amount(
@@ -145,7 +145,7 @@ class TestPercentageAllocation:
         )
         self.bunq_.get_balance_by_id = Mock(return_value=Decimal("1000.00"))
         self.automate_allocations = AutomateAllocations(
-            bunq=self.bunq_, store=self.store_
+            bank_client=self.bunq_, store=self.store_
         )
 
     def test_when_percentage_is_100_expect_total_remainder_in_payment(
@@ -294,7 +294,7 @@ class TestFixedAllocation:
             return_value=Settings(minimum=Decimal("500.00"), id=0)
         )
         self.automate_allocations = AutomateAllocations(
-            bunq=self.bunq_, store=self.store_
+            bank_client=self.bunq_, store=self.store_
         )
 
     def test_when_amount_available_expect_amount_in_payment(
@@ -366,7 +366,7 @@ class TestMixedAllocation:
         )
 
         self.automate_allocations = AutomateAllocations(
-            bunq=self.bunq_, store=self.store_
+            bank_client=self.bunq_, store=self.store_
         )
 
         self.expected_allocations = [
