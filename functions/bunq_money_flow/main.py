@@ -18,7 +18,6 @@ PROJECT_ID = os.getenv("GCLOUD_PROJECT")
 ENVIRONMENT = os.getenv("ENVIRONMENT")
 DEVICE_DESCRIPTION = os.getenv("DESCRIPTION")
 
-VPC_CONNECTOR_NAME = StringParam("VPC_CONNECTOR_NAME")
 BUNQ_CONFIG_SECRET_NAME = StringParam("BUNQ_CONFIG_SECRET_NAME")
 BUNQ_API_KEY_SECRET_NAME = StringParam("BUNQ_API_KEY_SECRET_NAME")
 REGION = StringParam("REGION")
@@ -86,8 +85,6 @@ class ApiContextSecretLoader:
     schedule="0 12 22-26 * *",
     region=REGION,
     secrets=[BUNQ_API_KEY_SECRET_NAME.value, BUNQ_CONFIG_SECRET_NAME.value],
-    vpc_connector=VPC_CONNECTOR_NAME,
-    vpc_connector_egress_settings="ALL_TRAFFIC",
     ingress="ALLOW_INTERNAL_ONLY",
 )
 def run_sorter(_event: scheduler_fn.ScheduledEvent):
