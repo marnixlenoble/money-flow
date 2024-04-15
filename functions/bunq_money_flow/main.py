@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Optional
 
@@ -37,12 +38,13 @@ class ApiContextSecretLoader:
                 continue
 
             try:
-                print(f"Destroying secret version: {version.name}")
+                logging.info(f"Destroying secret version: {version.name}")
                 self.client.destroy_secret_version(request={"name": version.name})
             except Exception as e:
-                print(e)
+                logging.error(e)
 
     def save(self, api_context: ApiContext):
+        logging.info("Saving api context")
         json_string = api_context.to_json()
         parent = self.client.secret_path(self.project_id, self.secret_name)
 
@@ -88,6 +90,7 @@ class ApiContextSecretLoader:
     ingress="ALLOW_INTERNAL_ONLY",
 )
 def run_sorter(_event: scheduler_fn.ScheduledEvent):
+    logging.basicConfig(level=logging.INFO)
     api_key = os.environ.get(BUNQ_API_KEY_SECRET_NAME.value)
     client = firestore.client()
     store_ = FireStore(client=client)
