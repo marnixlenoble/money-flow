@@ -2,7 +2,7 @@ from decimal import Decimal
 from typing import Optional
 
 from .allocation import Allocation
-from .bunq_lib import BunqLib
+from .money_flow import BankAdapter
 
 
 def _check_minimum_amount(
@@ -28,9 +28,9 @@ def _check_remainder(amount: Decimal, *, remainder: Decimal) -> Decimal:
 
 
 def top_up_strategy(
-    allocation: Allocation, remainder: Decimal, *, bunq: BunqLib
+    allocation: Allocation, remainder: Decimal, *, bank: BankAdapter
 ) -> Decimal:
-    balance = bunq.get_balance_by_iban(iban=allocation.iban)
+    balance = bank.get_balance_by_iban(iban=allocation.iban)
     amount = allocation.value - balance
     amount = _check_remainder(amount, remainder=remainder)
     amount = _check_minimum_amount(amount, minimum_amount=allocation.minimum_amount)

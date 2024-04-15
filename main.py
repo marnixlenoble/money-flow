@@ -5,7 +5,7 @@ from bunq.sdk.context.api_context import ApiContext
 from dotenv import load_dotenv
 from firebase_admin import credentials, initialize_app, firestore
 
-from functions.bunq_money_flow.src import FireStore, BunqLib, AutomateAllocations
+from functions.bunq_money_flow.src import FireStore, BunqAdapter, AutomateAllocations
 
 load_dotenv()
 
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     client = firestore.client()
 
     store_ = FireStore(client=client)
-    bunq_ = BunqLib(
+    bunq_ = BunqAdapter(
         api_key=API_KEY,
         environment_type=ENVIRONMENT,
         device_description=DEVICE_DESCRIPTION,

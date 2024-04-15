@@ -1,12 +1,33 @@
+from decimal import Decimal
 from itertools import groupby
+from typing import Protocol, Optional
 
 from .allocation import FireStore
-from .bunq_lib import BunqLib
+from .bunq_lib import BunqAdapter
 from .strategies import all_strategies
 
 
+class BankAdapter(Protocol):
+    def make_payment(
+        self,
+        *,
+        amount: Decimal,
+        description: str,
+        iban: str,
+        iban_name: str,
+        account_id: int,
+    ):
+        ...
+
+    def get_balance_by_id(self, *, id_: int) -> Optional[Decimal]:
+        ...
+
+    def get_balance_by_iban(self, *, iban: str):
+        ...
+
+
 class AutomateAllocations:
-    def __init__(self, bunq: BunqLib, store: FireStore):
+    def __init__(self, bunq: BunqAdapter, store: FireStore):
         self.bunq = bunq
         self.store = store
 

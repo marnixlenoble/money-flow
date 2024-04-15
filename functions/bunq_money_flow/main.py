@@ -9,7 +9,7 @@ from firebase_functions import scheduler_fn
 from firebase_functions.params import StringParam
 from google.cloud.secretmanager_v1 import SecretManagerServiceClient
 
-from src import BunqLib, FireStore, AutomateAllocations
+from src import BunqAdapter, FireStore, AutomateAllocations
 
 load_dotenv()
 
@@ -95,7 +95,7 @@ def run_sorter(_event: scheduler_fn.ScheduledEvent):
     client = firestore.client()
     store_ = FireStore(client=client)
 
-    bunq_ = BunqLib(
+    bunq_ = BunqAdapter(
         api_key=api_key,
         environment_type=ENVIRONMENT,
         device_description=DEVICE_DESCRIPTION,
