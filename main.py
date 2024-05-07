@@ -26,7 +26,10 @@ class ApiContextFileLoader:
         api_context.save(self.file_path)
 
     def load(self) -> Optional[ApiContext]:
-        return ApiContext.restore(self.file_path)
+        try:
+            return ApiContext.restore(self.file_path)
+        except FileNotFoundError:
+            return None
 
 
 if __name__ == "__main__":
