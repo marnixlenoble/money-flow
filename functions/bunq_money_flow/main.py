@@ -1,12 +1,14 @@
 import logging
 import os
 
+from bunq.sdk.security import security
 from dotenv import load_dotenv
 from firebase_admin import initialize_app, firestore
 from firebase_functions import scheduler_fn
 from firebase_functions.params import StringParam
 
 from src import BunqClient, FireStore, AutomateAllocations, ApiContextSecretLoader
+from src.security_monkey_patch import is_valid_response_body
 
 load_dotenv()
 
@@ -24,6 +26,8 @@ REGION = StringParam("REGION")
 
 initialize_app()
 
+# Monkey patching the bunq sdk to use the custom is_valid_response_body function
+security.is_valid_response_body = is_valid_response_body
 
 
 @scheduler_fn.on_schedule(

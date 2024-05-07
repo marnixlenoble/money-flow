@@ -2,10 +2,12 @@ import os
 from typing import Optional
 
 from bunq.sdk.context.api_context import ApiContext
+from bunq.sdk.security import security
 from dotenv import load_dotenv
 from firebase_admin import credentials, initialize_app, firestore
 
 from functions.bunq_money_flow.src import FireStore, BunqClient, AutomateAllocations
+from functions.bunq_money_flow.src.security_monkey_patch import is_valid_response_body
 
 load_dotenv()
 
@@ -16,6 +18,10 @@ API_KEY = os.getenv("BUNQ_API_KEY")
 
 ENVIRONMENT = os.getenv("ENVIRONMENT")
 DEVICE_DESCRIPTION = os.getenv("DESCRIPTION")
+
+
+# Monkey patching the bunq sdk to use the custom is_valid_response_body function
+security.is_valid_response_body = is_valid_response_body
 
 
 class ApiContextFileLoader:
