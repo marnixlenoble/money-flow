@@ -10,29 +10,17 @@ class Allocation:
     description: str
     value: Decimal
     type: str
-    iban: str
-    iban_name: str
+    target_iban: str
+    target_iban_name: str
+    source_iban: str
     minimum_amount: Optional[Decimal] = None
     maximum_amount: Optional[Decimal] = None
-    order: Optional[int] = None
-
-
-@dataclass
-class Settings:
-    minimum: Decimal
-    id: int
+    order: Optional[int] = 1
 
 
 class FireStore:
     def __init__(self, client: Client):
         self.client = client
-
-    def get_main_account_settings(self):
-        data = (
-            self.client.collection("settings").document("main_account").get().to_dict()
-        )
-
-        return Settings(minimum=Decimal(data.get("minimum")), id=data.get("id"))
 
     def get_allocations(self):
         data = self.client.collection("allocation").stream()

@@ -7,8 +7,20 @@ from typing import Protocol, Optional
 from bunq.sdk.context.api_context import ApiContext
 from bunq.sdk.context.api_environment_type import ApiEnvironmentType
 from bunq.sdk.context.bunq_context import BunqContext
-from bunq.sdk.model.generated.endpoint import MonetaryAccount, Payment
+from bunq.sdk.model.generated.endpoint import (
+    MonetaryAccount,
+    Payment,
+    MonetaryAccountBank,
+    MonetaryAccountSavings,
+    MonetaryAccountJoint,
+    MonetaryAccountExternalSavings,
+    MonetaryAccountInvestment,
+    MonetaryAccountExternal,
+    MonetaryAccountLight,
+)
 from bunq.sdk.model.generated.object_ import Amount, Pointer
+
+from .types import BankClient
 
 warnings.filterwarnings("ignore", message=r".*bunq SDK beta.*")
 logger = logging.getLogger(__name__)
@@ -22,7 +34,7 @@ class ApiContextLoader(Protocol):
         ...
 
 
-class BunqClient:
+class BunqClient(BankClient):
     def __init__(
         self,
         api_key,
@@ -60,28 +72,43 @@ class BunqClient:
         BunqContext.load_api_context(api_context)
         self.is_connected = True
 
+    def get_balance_by_iban(self, *, iban: str) -> Optional[Decimal]:
+        if not self.is_connected:
+            raise Exception("Not connected. Please call connect first")
+
+        account = self._get_account(iban=iban)
+        if account is None:
+            return None
+
+        return Decimal(account.balance.value)
+
     def make_payment(
         self,
         *,
         amount: Decimal,
         description: str,
-        iban: str,
-        iban_name: str,
-        account_id: int,
-    ):
+        target_iban: str,
+        target_iban_name: str,
+        source_iban: str,
+    ) -> None:
         if not self.is_connected:
             raise Exception("Not connected. Please call connect first")
 
         max_retries = 5
         retry_delay = 10
         retry_count = 0
+        account_id = self._get_account_id(iban=source_iban)
 
         while retry_count < max_retries:
             try:
-                logger.info(f"Making payment of {amount} to {iban} ({iban_name})")
+                logger.info(
+                    f"Making payment of {amount} to {target_iban} ({target_iban_name})"
+                )
                 Payment.create(
                     amount=Amount("{:.2f}".format(amount), "EUR"),
-                    counterparty_alias=Pointer("IBAN", iban, name=iban_name),
+                    counterparty_alias=Pointer(
+                        "IBAN", target_iban, name=target_iban_name
+                    ),
                     description=description,
                     monetary_account_id=account_id,
                 )
@@ -93,21 +120,24 @@ class BunqClient:
                 logger.info(f"Retrying... ({retry_count}/{max_retries})")
                 sleep(retry_delay)
 
-    def get_balance_by_id(self, *, id_: int):
-        if not self.is_connected:
-            raise Exception("Not connected. Please call connect first")
-
-        main_account: MonetaryAccount = MonetaryAccount.get(id_).value
-        if main_account is None or main_account.is_all_field_none():
-            logger.error(f"Could not retrieve balance of account with id {id_}")
+    def _get_account_id(self, *, iban: str) -> Optional[int]:
+        account = self._get_account(iban=iban)
+        if account is None:
             return None
 
-        return Decimal(main_account.get_referenced_object().balance.value)
+        return account.id_
 
-    def get_balance_by_iban(self, *, iban: str):
-        if not self.is_connected:
-            raise Exception("Not connected. Please call connect first")
-
+    def _get_account(
+        self, *, iban: str
+    ) -> Optional[
+        MonetaryAccountBank
+        | MonetaryAccountLight
+        | MonetaryAccountSavings
+        | MonetaryAccountJoint
+        | MonetaryAccountExternalSavings
+        | MonetaryAccountExternal
+        | MonetaryAccountInvestment
+    ]:
         if not self._memoized_accounts:
             self._memoized_accounts = MonetaryAccount.list().value
 
@@ -119,7 +149,7 @@ class BunqClient:
             referenced_object = account.get_referenced_object()
             for alias in referenced_object.alias:
                 if alias.type_ == "IBAN" and alias.value == iban:
-                    return Decimal(referenced_object.balance.value)
+                    return referenced_object
 
         else:
             logger.error(f"Could not retrieve balance of account with iban {iban}")

@@ -1,28 +1,10 @@
 from decimal import Decimal
 from itertools import groupby
-from typing import Protocol, Optional
+from typing import Optional
 
-from .allocation import FireStore
+from .allocation import FireStore, Allocation
 from .strategies import all_strategies
-
-
-class BankClient(Protocol):
-    def make_payment(
-        self,
-        *,
-        amount: Decimal,
-        description: str,
-        iban: str,
-        iban_name: str,
-        account_id: int,
-    ):
-        ...
-
-    def get_balance_by_id(self, *, id_: int) -> Optional[Decimal]:
-        ...
-
-    def get_balance_by_iban(self, *, iban: str):
-        ...
+from .types import BankClient
 
 
 class AutomateAllocations:
@@ -31,51 +13,48 @@ class AutomateAllocations:
         self.store = store
 
     def run(self):
-        allocations = self.store.get_allocations()
-        grouped_allocations = groupby(allocations, key=lambda x: x.order)
+        allocations_all = self.store.get_allocations()
+        allocations_by_source = groupby(allocations_all, key=lambda x: x.source_iban)
 
-        main_account_settings = self.store.get_main_account_settings()
-        cutoff = main_account_settings.minimum
-        main_account_balance = self.bank_client.get_balance_by_id(
-            id_=main_account_settings.id
-        )
-        if main_account_balance < cutoff:
-            return
+        for source_iban, group in allocations_by_source:
+            remainder = self.bank_client.get_balance_by_iban(iban=source_iban)
+            allocations_per_source = list(group)
+            allocations_per_source.sort(key=lambda x: x.order)
+            grouped_allocations = groupby(allocations_per_source, key=lambda x: x.order)
 
-        remainder = main_account_balance - cutoff
+            for _, group_ in grouped_allocations:
+                allocations = list(group_)
+                for allocation in filter(lambda a: a.type != "percentage", allocations):
+                    remainder = self._process_allocation(allocation, remainder)
 
-        for _, group in grouped_allocations:
-            allocations = list(group)
-            for allocation in filter(lambda a: a.type != "percentage", allocations):
-                remainder = self._process_allocation(
-                    allocation, main_account_settings, remainder
-                )
-
-            original_remainder = remainder
-            for allocation in filter(lambda a: a.type == "percentage", allocations):
-                remainder = self._process_allocation(
-                    allocation,
-                    main_account_settings,
-                    remainder,
-                    original_remainder=original_remainder,
-                )
+                original_remainder = remainder
+                for allocation in filter(lambda a: a.type == "percentage", allocations):
+                    remainder = self._process_allocation(
+                        allocation,
+                        remainder,
+                        original_remainder=original_remainder,
+                    )
 
     def _process_allocation(
-        self, allocation, main_account_settings, remainder, *, original_remainder=None
+        self,
+        allocation: Allocation,
+        remainder: Decimal,
+        *,
+        original_remainder: Optional[Decimal] = None,
     ):
         strategy = all_strategies.get(allocation.type)
         amount = strategy(
             allocation,
             original_remainder if original_remainder else remainder,
-            bunq=self.bank_client,
+            bank_client=self.bank_client,
         )
-        if amount > 0:
+        if amount > 0 and allocation.target_iban != allocation.source_iban:
             self.bank_client.make_payment(
                 amount=amount,
                 description=allocation.description,
-                iban=allocation.iban,
-                iban_name=allocation.iban_name,
-                account_id=main_account_settings.id,
+                target_iban=allocation.target_iban,
+                target_iban_name=allocation.target_iban_name,
+                source_iban=allocation.source_iban,
             )
-            remainder -= amount
-        return remainder
+
+        return remainder - amount
