@@ -21,20 +21,30 @@ DEVICE_DESCRIPTION = os.getenv("DESCRIPTION")
 
 BUNQ_CONFIG_SECRET_NAME = StringParam("BUNQ_CONFIG_SECRET_NAME")
 BUNQ_API_KEY_SECRET_NAME = StringParam("BUNQ_API_KEY_SECRET_NAME")
+BUNQ_CONFIG_SECRET_PERMANENT_VERSION = StringParam(
+    "BUNQ_CONFIG_SECRET_PERMANENT_VERSION"
+)
 REGION = StringParam("REGION")
 
 initialize_app()
 
 
 class ApiContextSecretLoader:
-    def __init__(self, project_id: str, secret_name: str):
+    def __init__(self, project_id: str, secret_name: str, permanent_version: str):
         self.project_id = project_id
         self.secret_name = secret_name
         self.client = SecretManagerServiceClient()
+        self.permanent_version = permanent_version
+
+    def _get_secret_version(self, secret_name):
+        return self.client.parse_secret_version_path(secret_name).get("secret_version")
 
     def _delete_previous_versions(self, parent):
-        for version in self.client.list_secret_versions(request={"parent": parent}):
-            if version.state == "DESTROYED":
+        for version in self.client.list_secret_versions(
+            request={"parent": parent, "filter": "state:ENABLED"}
+        ):
+            if self._get_secret_version(version.name) == self.permanent_version:
+                logging.info(f"Skipping deletion of permanent version: {version.name}")
                 continue
 
             try:
@@ -100,7 +110,9 @@ def run_sorter(_event: scheduler_fn.ScheduledEvent):
         environment_type=ENVIRONMENT,
         device_description=DEVICE_DESCRIPTION,
         api_context_loader=ApiContextSecretLoader(
-            PROJECT_ID, BUNQ_CONFIG_SECRET_NAME.value
+            PROJECT_ID,
+            BUNQ_CONFIG_SECRET_NAME.value,
+            BUNQ_CONFIG_SECRET_PERMANENT_VERSION.value,
         ),
     )
     bunq_.connect()
