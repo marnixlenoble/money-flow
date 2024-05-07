@@ -89,7 +89,7 @@ class ApiContextSecretLoader:
             return ApiContext.from_json(payload)
 
         except Exception as e:
-            print(e)
+            logging.error(e)
             return None
 
 

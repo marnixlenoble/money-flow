@@ -55,6 +55,8 @@ def top_up_strategy(
     amount = _check_remainder(amount, remainder=remainder)
     amount = _check_minimum_amount(amount, minimum_amount=allocation.minimum_amount)
     amount = _check_maximum_amount(amount, maximum_amount=allocation.maximum_amount)
+    if amount > 0:
+        logging.info(f"\t Need allocate {amount} to {allocation.target_iban_name}.")
 
     return amount
 
@@ -67,6 +69,8 @@ def fixed_strategy(allocation: Allocation, remainder: Decimal, *_, **__) -> Deci
     amount = _check_remainder(amount, remainder=remainder)
     amount = _check_minimum_amount(amount, minimum_amount=allocation.minimum_amount)
     amount = _check_maximum_amount(amount, maximum_amount=allocation.maximum_amount)
+    if amount > 0:
+        logging.info(f"\t Need allocate {amount} to {allocation.target_iban_name}.")
 
     return amount
 
@@ -80,6 +84,8 @@ def percentage_strategy(
     amount = round(remainder * (allocation.value / 100), 2)
     amount = _check_minimum_amount(amount, minimum_amount=allocation.minimum_amount)
     amount = _check_maximum_amount(amount, maximum_amount=allocation.maximum_amount)
+    if amount > 0:
+        logging.info(f"\t Need allocate {amount} to {allocation.target_iban_name}.")
 
     return amount
 
