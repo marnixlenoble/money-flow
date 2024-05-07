@@ -1,6 +1,6 @@
 aenum==2.2.6 ; python_full_version >= "3.11.0" and python_full_version < "3.12.0"
 blinker==1.7.0 ; python_full_version >= "3.11.0" and python_full_version < "3.12.0"
-bunq-sdk @ git+https://github.com/bunq/sdk_python.git@3cd69ada6b51c41f358a15b7005fab436126626f ; python_full_version >= "3.11.0" and python_full_version < "3.12.0"
+bunq-sdk @ git+https://github.com/bunq/sdk_python.git@1b62c8cd57a4a5c29af5083ecf7c45056bf12883 ; python_full_version >= "3.11.0" and python_full_version < "3.12.0"
 cachecontrol==0.13.1 ; python_full_version >= "3.11.0" and python_full_version < "3.12.0"
 cachetools==5.3.2 ; python_full_version >= "3.11.0" and python_full_version < "3.12.0"
 certifi==2023.11.17 ; python_full_version >= "3.11.0" and python_full_version < "3.12.0"

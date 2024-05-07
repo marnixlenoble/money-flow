@@ -69,7 +69,7 @@ files = [
 
 [[package]]
 name = "bunq_sdk"
-version = "1.24.16.36"
+version = "1.24.20.9"
 description = "bunq Python SDK"
 optional = false
 python-versions = ">=3.7.0"
@@ -87,8 +87,8 @@ urllib3 = ">=1.25.10,<2.0.0"
 [package.source]
 type = "git"
 url = "https://github.com/bunq/sdk_python.git"
-reference = "1.24.16.36"
-resolved_reference = "3cd69ada6b51c41f358a15b7005fab436126626f"
+reference = "1.24.20.9"
+resolved_reference = "1b62c8cd57a4a5c29af5083ecf7c45056bf12883"
 
 [[package]]
 name = "cachecontrol"
@@ -1650,4 +1650,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.11.0"
-content-hash = "6acf89c37732153fa1842d60f9e10633d5334ef784d40c39ff130f8b53ffc840"
+content-hash = "8fb899a63ea2a8f722f26188dfb459bc1560121f3a94d74afe90e473ef2bc62d"
