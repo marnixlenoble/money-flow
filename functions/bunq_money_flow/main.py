@@ -94,12 +94,12 @@ class ApiContextSecretLoader:
 
 
 @scheduler_fn.on_schedule(
-    schedule="0 12 22-26 * *",
+    schedule="0 0 26 * *",
     region=REGION,
     secrets=[BUNQ_API_KEY_SECRET_NAME.value, BUNQ_CONFIG_SECRET_NAME.value],
     ingress="ALLOW_INTERNAL_ONLY",
 )
-def run_sorter(_event: scheduler_fn.ScheduledEvent):
+def monthly_sorter(_event: scheduler_fn.ScheduledEvent):
     logging.basicConfig(level=logging.INFO)
     api_key = os.environ.get(BUNQ_API_KEY_SECRET_NAME.value)
     client = firestore.client()
