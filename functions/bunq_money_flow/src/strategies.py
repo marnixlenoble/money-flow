@@ -1,91 +1,33 @@
 import logging
 from decimal import Decimal
-from typing import Optional
 
-from .allocation import Allocation
+from lib.common_strategies import (
+    _check_maximum_amount,
+    _check_minimum_amount,
+    _check_remainder,
+    fixed_strategy,
+    percentage_strategy,
+)
+
+from .transfer_flow import Transfer
 from .types import BankClient
 
 
-def _check_minimum_amount(
-    amount: Decimal, *, minimum_amount: Optional[Decimal]
-) -> Decimal:
-    if amount > (minimum_amount if minimum_amount else 0):
-        return amount
-    else:
-        logging.info(
-            f"\t Amount {amount} is less than minimum amount {minimum_amount}. Skipping."
-        )
-        return Decimal(0)
-
-
-def _check_maximum_amount(
-    amount: Decimal, *, maximum_amount: Optional[Decimal]
-) -> Decimal:
-    if maximum_amount is not None and amount > maximum_amount:
-        logging.info(
-            f"\t Amount {amount} exceeds maximum amount {maximum_amount}. Using maximum amount."
-        )
-        return maximum_amount
-    else:
-        return amount
-
-
-def _check_remainder(amount: Decimal, *, remainder: Decimal) -> Decimal:
-    if amount < remainder:
-        return amount
-    else:
-        logging.info(
-            f"\t Amount {amount} exceeds remainder {remainder}. Using remainder."
-        )
-        return remainder
-
-
 def top_up_strategy(
-    allocation: Allocation, remainder: Decimal, *, bank_client: BankClient
+    transfer: Transfer, remainder: Decimal, *, bank_client: BankClient
 ) -> Decimal:
-    logging.info(
-        f"Attempting to top up allocation {allocation.description} to {allocation.value}."
-    )
-    balance = bank_client.get_balance_by_iban(iban=allocation.target_iban)
-    amount = allocation.value - balance
+    logging.info(f"Attempting to top up {transfer.description} to {transfer.value}.")
+    balance = bank_client.get_balance_by_iban(iban=transfer.target_iban)
+    amount = transfer.value - balance
     if amount < 0:
-        logging.info(f"\t Skipping allocation. Balance is already sufficient.")
+        logging.info(f"\t Skipping transfer. Balance is already sufficient.")
         return Decimal(0)
 
     amount = _check_remainder(amount, remainder=remainder)
-    amount = _check_minimum_amount(amount, minimum_amount=allocation.minimum_amount)
-    amount = _check_maximum_amount(amount, maximum_amount=allocation.maximum_amount)
+    amount = _check_minimum_amount(amount, minimum_amount=transfer.minimum_amount)
+    amount = _check_maximum_amount(amount, maximum_amount=transfer.maximum_amount)
     if amount > 0:
-        logging.info(f"\t Need allocate {amount} to {allocation.target_iban_name}.")
-
-    return amount
-
-
-def fixed_strategy(allocation: Allocation, remainder: Decimal, *_, **__) -> Decimal:
-    logging.info(
-        f"Attempting to allocate {allocation.value} to {allocation.description}."
-    )
-    amount = allocation.value
-    amount = _check_remainder(amount, remainder=remainder)
-    amount = _check_minimum_amount(amount, minimum_amount=allocation.minimum_amount)
-    amount = _check_maximum_amount(amount, maximum_amount=allocation.maximum_amount)
-    if amount > 0:
-        logging.info(f"\t Need allocate {amount} to {allocation.target_iban_name}.")
-
-    return amount
-
-
-def percentage_strategy(
-    allocation: Allocation, remainder: Decimal, *_, **__
-) -> Decimal:
-    logging.info(
-        f"Attempting to allocate {allocation.value}% to {allocation.description}."
-    )
-    amount = round(remainder * (allocation.value / 100), 2)
-    amount = _check_minimum_amount(amount, minimum_amount=allocation.minimum_amount)
-    amount = _check_maximum_amount(amount, maximum_amount=allocation.maximum_amount)
-    if amount > 0:
-        logging.info(f"\t Need allocate {amount} to {allocation.target_iban_name}.")
+        logging.info(f"\t Need transfer {amount} to {transfer.target_iban_name}.")
 
     return amount
 

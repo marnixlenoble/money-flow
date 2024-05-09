@@ -3,11 +3,10 @@ import os
 
 from bunq.sdk.security import security
 from dotenv import load_dotenv
-from firebase_admin import initialize_app, firestore
+from firebase_admin import firestore, initialize_app
 from firebase_functions import scheduler_fn
 from firebase_functions.params import StringParam
-
-from src import BunqClient, FireStore, AutomateAllocations, ApiContextSecretLoader
+from src import ApiContextSecretLoader, AutomateTransfers, BunqClient, FireStore
 from src.security_monkey_patch import is_valid_response_body
 
 load_dotenv()
@@ -36,7 +35,7 @@ security.is_valid_response_body = is_valid_response_body
     secrets=[BUNQ_API_KEY_SECRET_NAME.value, BUNQ_CONFIG_SECRET_NAME.value],
     ingress="ALLOW_INTERNAL_ONLY",
 )
-def monthly_sorter(_event: scheduler_fn.ScheduledEvent):
+def bunq_monthly_sorter(_event: scheduler_fn.ScheduledEvent):
     logging.basicConfig(level=logging.INFO)
     api_key = os.environ.get(BUNQ_API_KEY_SECRET_NAME.value)
     client = firestore.client()
@@ -54,4 +53,4 @@ def monthly_sorter(_event: scheduler_fn.ScheduledEvent):
     )
     bunq_.connect()
 
-    AutomateAllocations(bank_client=bunq_, store=store_).run()
+    AutomateTransfers(bank_client=bunq_, store=store_).run()

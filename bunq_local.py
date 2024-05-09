@@ -4,9 +4,9 @@ from typing import Optional
 from bunq.sdk.context.api_context import ApiContext
 from bunq.sdk.security import security
 from dotenv import load_dotenv
-from firebase_admin import credentials, initialize_app, firestore
+from firebase_admin import credentials, firestore, initialize_app
 
-from functions.bunq_money_flow.src import FireStore, BunqClient, AutomateAllocations
+from functions.bunq_money_flow.src import AutomateTransfers, BunqClient, FireStore
 from functions.bunq_money_flow.src.security_monkey_patch import is_valid_response_body
 
 load_dotenv()
@@ -52,4 +52,4 @@ if __name__ == "__main__":
     )
     bunq_.connect()
 
-    AutomateAllocations(bank_client=bunq_, store=store_).run()
+    AutomateTransfers(bank_client=bunq_, store=store_).run()

@@ -1,8 +1,8 @@
 from decimal import Decimal
-from unittest.mock import Mock, MagicMock, call
+from unittest.mock import MagicMock, Mock, call
 
-from functions.bunq_money_flow.src.allocation import Allocation
-from functions.bunq_money_flow.src.money_flow import AutomateAllocations
+from functions.bunq_money_flow.src.money_flow import AutomateTransfers
+from functions.bunq_money_flow.src.transfer_flow import Allocation
 
 default_payment_kwargs = {
     "description": "test description",
@@ -17,7 +17,7 @@ class TestTopUpAllocation:
         self.bunq_ = MagicMock()
         self.store_ = MagicMock()
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("1000.00"))
-        self.automate_allocations = AutomateAllocations(
+        self.automate_allocations = AutomateTransfers(
             bank_client=self.bunq_, store=self.store_
         )
 
@@ -140,7 +140,7 @@ class TestPercentageAllocation:
         self.bunq_ = MagicMock()
         self.store_ = MagicMock()
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("500.00"))
-        self.automate_allocations = AutomateAllocations(
+        self.automate_allocations = AutomateTransfers(
             bank_client=self.bunq_, store=self.store_
         )
 
@@ -284,7 +284,7 @@ class TestFixedAllocation:
         self.bunq_.make_payment = Mock()
 
         self.store_ = MagicMock()
-        self.automate_allocations = AutomateAllocations(
+        self.automate_allocations = AutomateTransfers(
             bank_client=self.bunq_, store=self.store_
         )
 
@@ -353,7 +353,7 @@ class TestMixedAllocation:
 
         self.store_ = MagicMock()
 
-        self.automate_allocations = AutomateAllocations(
+        self.automate_allocations = AutomateTransfers(
             bank_client=self.bunq_, store=self.store_
         )
 
