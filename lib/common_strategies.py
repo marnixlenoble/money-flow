@@ -9,7 +9,7 @@ from typing import Optional
 class Flow:
     description: str
     value: Decimal
-    type: str
+    strategy_type: str
     minimum_amount: Optional[Decimal] = None
     maximum_amount: Optional[Decimal] = None
     priority: Optional[int] = 1

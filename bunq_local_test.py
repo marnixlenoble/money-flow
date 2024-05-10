@@ -2,7 +2,7 @@ from decimal import Decimal
 from unittest.mock import MagicMock, Mock, call
 
 from functions.bunq_money_flow.src.money_flow import AutomateTransfers
-from functions.bunq_money_flow.src.transfer_flow import Allocation
+from functions.bunq_money_flow.src.transfer_flows import Transfer
 
 default_payment_kwargs = {
     "description": "test description",
@@ -12,12 +12,12 @@ default_payment_kwargs = {
 }
 
 
-class TestTopUpAllocation:
+class TestTopUpTransfer:
     def setup_method(self):
         self.bunq_ = MagicMock()
         self.store_ = MagicMock()
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("1000.00"))
-        self.automate_allocations = AutomateTransfers(
+        self.automate_transfers = AutomateTransfers(
             bank_client=self.bunq_, store=self.store_
         )
 
@@ -25,11 +25,11 @@ class TestTopUpAllocation:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_allocations = Mock(
+        self.store_.get_transfers = Mock(
             return_value=[
-                Allocation(
+                Transfer(
                     value=Decimal("99999999.00"),
-                    type="top_up",
+                    strategy_type="top_up",
                     **default_payment_kwargs,
                 )
             ]
@@ -40,7 +40,7 @@ class TestTopUpAllocation:
             Decimal("0.00"),
         ]
 
-        self.automate_allocations.run()
+        self.automate_transfers.run()
 
         self.bunq_.make_payment.assert_called_once_with(
             amount=Decimal("500.00"), **default_payment_kwargs
@@ -50,18 +50,18 @@ class TestTopUpAllocation:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_allocations = Mock(
+        self.store_.get_transfers = Mock(
             return_value=[
-                Allocation(
+                Transfer(
                     value=Decimal("2000.00"),
-                    type="top_up",
+                    strategy_type="top_up",
                     **default_payment_kwargs,
                 )
             ]
         )
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("1970.00"))
 
-        self.automate_allocations.run()
+        self.automate_transfers.run()
 
         self.bunq_.make_payment.assert_any_call(
             amount=Decimal("30.00"),
@@ -72,11 +72,11 @@ class TestTopUpAllocation:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_allocations = Mock(
+        self.store_.get_transfers = Mock(
             return_value=[
-                Allocation(
+                Transfer(
                     value=Decimal("2000.00"),
-                    type="top_up",
+                    strategy_type="top_up",
                     minimum_amount=Decimal("200.00"),
                     **default_payment_kwargs,
                 )
@@ -84,7 +84,7 @@ class TestTopUpAllocation:
         )
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("1900.00"))
 
-        self.automate_allocations.run()
+        self.automate_transfers.run()
 
         self.bunq_.make_payment.assert_not_called()
 
@@ -92,11 +92,11 @@ class TestTopUpAllocation:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_allocations = Mock(
+        self.store_.get_transfers = Mock(
             return_value=[
-                Allocation(
+                Transfer(
                     value=Decimal("2000.00"),
-                    type="top_up",
+                    strategy_type="top_up",
                     maximum_amount=Decimal("200.00"),
                     **default_payment_kwargs,
                 )
@@ -104,7 +104,7 @@ class TestTopUpAllocation:
         )
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("1900.00"))
 
-        self.automate_allocations.run()
+        self.automate_transfers.run()
 
         self.bunq_.make_payment.assert_any_call(
             amount=Decimal("100.00"),
@@ -115,11 +115,11 @@ class TestTopUpAllocation:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_allocations = Mock(
+        self.store_.get_transfers = Mock(
             return_value=[
-                Allocation(
+                Transfer(
                     value=Decimal("2000.00"),
-                    type="top_up",
+                    strategy_type="top_up",
                     maximum_amount=Decimal("50.00"),
                     **default_payment_kwargs,
                 )
@@ -127,7 +127,7 @@ class TestTopUpAllocation:
         )
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("1900.00"))
 
-        self.automate_allocations.run()
+        self.automate_transfers.run()
 
         self.bunq_.make_payment.assert_any_call(
             amount=Decimal("50.00"),
@@ -135,12 +135,12 @@ class TestTopUpAllocation:
         )
 
 
-class TestPercentageAllocation:
+class TestPercentageTransfer:
     def setup_method(self):
         self.bunq_ = MagicMock()
         self.store_ = MagicMock()
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("500.00"))
-        self.automate_allocations = AutomateTransfers(
+        self.automate_transfers = AutomateTransfers(
             bank_client=self.bunq_, store=self.store_
         )
 
@@ -148,42 +148,42 @@ class TestPercentageAllocation:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_allocations = Mock(
+        self.store_.get_transfers = Mock(
             return_value=[
-                Allocation(
+                Transfer(
                     value=Decimal("100.00"),
-                    type="percentage",
+                    strategy_type="percentage",
                     **default_payment_kwargs,
                 )
             ]
         )
 
-        self.automate_allocations.run()
+        self.automate_transfers.run()
 
         self.bunq_.make_payment.assert_called_once_with(
             amount=Decimal("500.00"), **default_payment_kwargs
         )
 
-    def test_when_two_percentage_allocations_expect_correct_amounts(
+    def test_when_two_percentage_transfers_expect_correct_amounts(
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_allocations = Mock(
+        self.store_.get_transfers = Mock(
             return_value=[
-                Allocation(
+                Transfer(
                     value=Decimal("10.00"),
-                    type="percentage",
+                    strategy_type="percentage",
                     **default_payment_kwargs,
                 ),
-                Allocation(
+                Transfer(
                     value=Decimal("50.00"),
-                    type="percentage",
+                    strategy_type="percentage",
                     **default_payment_kwargs,
                 ),
             ]
         )
 
-        self.automate_allocations.run()
+        self.automate_transfers.run()
 
         self.bunq_.make_payment.assert_any_call(
             amount=Decimal("50.00"), **default_payment_kwargs
@@ -197,18 +197,18 @@ class TestPercentageAllocation:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_allocations = Mock(
+        self.store_.get_transfers = Mock(
             return_value=[
-                Allocation(
+                Transfer(
                     value=Decimal("00.00"),
-                    type="percentage",
+                    strategy_type="percentage",
                     **default_payment_kwargs,
                 )
             ]
         )
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("2500.00"))
 
-        self.automate_allocations.run()
+        self.automate_transfers.run()
 
         self.bunq_.make_payment.assert_not_called()
 
@@ -216,11 +216,11 @@ class TestPercentageAllocation:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_allocations = Mock(
+        self.store_.get_transfers = Mock(
             return_value=[
-                Allocation(
+                Transfer(
                     value=Decimal("100.00"),
-                    type="percentage",
+                    strategy_type="percentage",
                     minimum_amount=Decimal("500.01"),
                     **default_payment_kwargs,
                 )
@@ -228,7 +228,7 @@ class TestPercentageAllocation:
         )
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("500.00"))
 
-        self.automate_allocations.run()
+        self.automate_transfers.run()
 
         self.bunq_.make_payment.assert_not_called()
 
@@ -236,18 +236,18 @@ class TestPercentageAllocation:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_allocations = Mock(
+        self.store_.get_transfers = Mock(
             return_value=[
-                Allocation(
+                Transfer(
                     value=Decimal("100.00"),
-                    type="percentage",
+                    strategy_type="percentage",
                     maximum_amount=Decimal("600.00"),
                     **default_payment_kwargs,
                 )
             ]
         )
 
-        self.automate_allocations.run()
+        self.automate_transfers.run()
 
         self.bunq_.make_payment.assert_called_with(
             amount=Decimal("500.00"),
@@ -258,18 +258,18 @@ class TestPercentageAllocation:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_allocations = Mock(
+        self.store_.get_transfers = Mock(
             return_value=[
-                Allocation(
+                Transfer(
                     value=Decimal("100.00"),
-                    type="percentage",
+                    strategy_type="percentage",
                     maximum_amount=Decimal("200.00"),
                     **default_payment_kwargs,
                 )
             ]
         )
 
-        self.automate_allocations.run()
+        self.automate_transfers.run()
 
         self.bunq_.make_payment.assert_called_with(
             amount=Decimal("200.00"),
@@ -277,31 +277,31 @@ class TestPercentageAllocation:
         )
 
 
-class TestFixedAllocation:
+class TestFixedTransfer:
     def setup_method(self):
         self.bunq_ = MagicMock()
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("500.00"))
         self.bunq_.make_payment = Mock()
 
         self.store_ = MagicMock()
-        self.automate_allocations = AutomateTransfers(
+        self.automate_transfers = AutomateTransfers(
             bank_client=self.bunq_, store=self.store_
         )
 
     def test_when_amount_available_expect_amount_in_payment(
         self,
     ):
-        self.store_.get_allocations = Mock(
+        self.store_.get_transfers = Mock(
             return_value=[
-                Allocation(
+                Transfer(
                     value=Decimal("200.00"),
-                    type="fixed",
+                    strategy_type="fixed",
                     **default_payment_kwargs,
                 )
             ]
         )
 
-        self.automate_allocations.run()
+        self.automate_transfers.run()
 
         self.bunq_.make_payment.assert_called_once_with(
             amount=Decimal("200.00"), **default_payment_kwargs
@@ -310,17 +310,17 @@ class TestFixedAllocation:
     def test_when_amount_unavailable_expect_available_amount_in_payment(
         self,
     ):
-        self.store_.get_allocations = Mock(
+        self.store_.get_transfers = Mock(
             return_value=[
-                Allocation(
+                Transfer(
                     value=Decimal("700.00"),
-                    type="fixed",
+                    strategy_type="fixed",
                     **default_payment_kwargs,
                 )
             ]
         )
 
-        self.automate_allocations.run()
+        self.automate_transfers.run()
 
         self.bunq_.make_payment.assert_called_once_with(
             amount=Decimal("500.00"), **default_payment_kwargs
@@ -329,23 +329,23 @@ class TestFixedAllocation:
     def test_when_amount_smaller_than_minimum_expect_no_payment(
         self,
     ):
-        self.store_.get_allocations = Mock(
+        self.store_.get_transfers = Mock(
             return_value=[
-                Allocation(
+                Transfer(
                     value=Decimal("1000.00"),
-                    type="fixed",
+                    strategy_type="fixed",
                     minimum_amount=Decimal("500.01"),
                     **default_payment_kwargs,
                 )
             ]
         )
 
-        self.automate_allocations.run()
+        self.automate_transfers.run()
 
         self.bunq_.make_payment.assert_not_called()
 
 
-class TestMixedAllocation:
+class TestMixedTransfer:
     def setup_method(self):
         self.bunq_ = MagicMock()
         self.bunq_.make_payment = Mock()
@@ -353,11 +353,11 @@ class TestMixedAllocation:
 
         self.store_ = MagicMock()
 
-        self.automate_allocations = AutomateTransfers(
+        self.automate_transfers = AutomateTransfers(
             bank_client=self.bunq_, store=self.store_
         )
 
-        self.expected_allocations = [
+        self.expected_transfers = [
             dict(
                 target_iban_name="Folkert Plank",
                 target_iban="NL76BUNQ2063655001",
@@ -389,43 +389,43 @@ class TestMixedAllocation:
                 description="top up",
             ),
         ]
-        self.store_.get_allocations = Mock(
+        self.store_.get_transfers = Mock(
             return_value=[
-                Allocation(
+                Transfer(
                     value=Decimal("4000.00"),
-                    type="top_up",
-                    order=1,
-                    **self.expected_allocations[0],
+                    strategy_type="top_up",
+                    priority=1,
+                    **self.expected_transfers[0],
                 ),
-                Allocation(
+                Transfer(
                     value=Decimal("250.00"),
-                    type="top_up",
-                    order=1,
-                    **self.expected_allocations[1],
+                    strategy_type="top_up",
+                    priority=1,
+                    **self.expected_transfers[1],
                 ),
-                Allocation(
+                Transfer(
                     value=Decimal("250.00"),
-                    type="fixed",
-                    order=1,
-                    **self.expected_allocations[2],
+                    strategy_type="fixed",
+                    priority=1,
+                    **self.expected_transfers[2],
                 ),
-                Allocation(
+                Transfer(
                     value=Decimal("33.33"),
-                    type="percentage",
-                    order=2,
-                    **self.expected_allocations[3],
+                    strategy_type="percentage",
+                    priority=2,
+                    **self.expected_transfers[3],
                 ),
-                Allocation(
+                Transfer(
                     value=Decimal("66.67"),
-                    type="percentage",
-                    order=2,
-                    **self.expected_allocations[3],
+                    strategy_type="percentage",
+                    priority=2,
+                    **self.expected_transfers[3],
                 ),
-                Allocation(
+                Transfer(
                     value=Decimal("1500"),
-                    type="fixed",
-                    order=0,
-                    **self.expected_allocations[4],
+                    strategy_type="fixed",
+                    priority=0,
+                    **self.expected_transfers[4],
                 ),
             ]
         )
@@ -437,15 +437,15 @@ class TestMixedAllocation:
             Decimal("189.56"),
         ]
 
-        self.automate_allocations.run()
+        self.automate_transfers.run()
 
         self.bunq_.make_payment.assert_has_calls(
             [
-                call(amount=Decimal("200.00"), **self.expected_allocations[0]),
-                call(amount=Decimal("60.44"), **self.expected_allocations[1]),
-                call(amount=Decimal("250.00"), **self.expected_allocations[2]),
-                call(amount=Decimal("563.13"), **self.expected_allocations[3]),
-                call(amount=Decimal("1126.43"), **self.expected_allocations[3]),
+                call(amount=Decimal("200.00"), **self.expected_transfers[0]),
+                call(amount=Decimal("60.44"), **self.expected_transfers[1]),
+                call(amount=Decimal("250.00"), **self.expected_transfers[2]),
+                call(amount=Decimal("563.13"), **self.expected_transfers[3]),
+                call(amount=Decimal("1126.43"), **self.expected_transfers[3]),
             ]
         )
 
@@ -456,13 +456,13 @@ class TestMixedAllocation:
             Decimal("189.56"),
         ]
 
-        self.automate_allocations.run()
+        self.automate_transfers.run()
 
         self.bunq_.make_payment.assert_has_calls(
             [
-                call(amount=Decimal("200.00"), **self.expected_allocations[0]),
-                call(amount=Decimal("60.44"), **self.expected_allocations[1]),
-                call(amount=Decimal("99.56"), **self.expected_allocations[2]),
+                call(amount=Decimal("200.00"), **self.expected_transfers[0]),
+                call(amount=Decimal("60.44"), **self.expected_transfers[1]),
+                call(amount=Decimal("99.56"), **self.expected_transfers[2]),
             ]
         )
 
@@ -472,55 +472,55 @@ class TestMixedAllocation:
             Decimal("3800.00"),
             Decimal("189.56"),
         ]
-        self.store_.get_allocations = Mock(
+        self.store_.get_transfers = Mock(
             return_value=[
-                Allocation(
+                Transfer(
                     value=Decimal("4000.00"),
-                    type="top_up",
-                    order=1,
-                    **self.expected_allocations[0],
+                    strategy_type="top_up",
+                    priority=1,
+                    **self.expected_transfers[0],
                 ),
-                Allocation(
+                Transfer(
                     value=Decimal("250.00"),
-                    type="top_up",
-                    order=1,
-                    **self.expected_allocations[1],
+                    strategy_type="top_up",
+                    priority=1,
+                    **self.expected_transfers[1],
                 ),
-                Allocation(
+                Transfer(
                     value=Decimal("250.00"),
-                    type="fixed",
-                    order=1,
-                    **self.expected_allocations[2],
+                    strategy_type="fixed",
+                    priority=1,
+                    **self.expected_transfers[2],
                 ),
-                Allocation(
+                Transfer(
                     value=Decimal("50.00"),
-                    type="percentage",
-                    order=2,
-                    **self.expected_allocations[3],
+                    strategy_type="percentage",
+                    priority=2,
+                    **self.expected_transfers[3],
                 ),
-                Allocation(
+                Transfer(
                     value=Decimal("50.00"),
-                    type="percentage",
-                    order=2,
+                    strategy_type="percentage",
+                    priority=2,
                     minimum_amount=Decimal("100.00"),
-                    **self.expected_allocations[3],
+                    **self.expected_transfers[3],
                 ),
-                Allocation(
+                Transfer(
                     value=Decimal("1500"),
-                    type="fixed",
-                    order=0,
-                    **self.expected_allocations[4],
+                    strategy_type="fixed",
+                    priority=0,
+                    **self.expected_transfers[4],
                 ),
             ]
         )
 
-        self.automate_allocations.run()
+        self.automate_transfers.run()
 
         self.bunq_.make_payment.assert_has_calls(
             [
-                call(amount=Decimal("200.00"), **self.expected_allocations[0]),
-                call(amount=Decimal("60.44"), **self.expected_allocations[1]),
-                call(amount=Decimal("250.00"), **self.expected_allocations[2]),
-                call(amount=Decimal("24.78"), **self.expected_allocations[3]),
+                call(amount=Decimal("200.00"), **self.expected_transfers[0]),
+                call(amount=Decimal("60.44"), **self.expected_transfers[1]),
+                call(amount=Decimal("250.00"), **self.expected_transfers[2]),
+                call(amount=Decimal("24.78"), **self.expected_transfers[3]),
             ]
         )

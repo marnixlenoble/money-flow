@@ -21,7 +21,7 @@ if __name__ == "__main__":
     initialize_app(cred)
     client = firestore.client()
 
-    # store_ = FireStore(client=client)
+    # store_ = OrderFlows(client=client)
     kraken = KrakenClient(api_key=KRAKEN_API_KEY, private_key=KRAKEN_PRIVATE_KEY)
     balances = kraken.get_balances()
     order = kraken.add_order(pair="XBTUSD", price="2.00", volume="1", type="buy")

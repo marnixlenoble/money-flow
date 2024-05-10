@@ -3,17 +3,17 @@ from itertools import groupby
 from typing import Optional
 
 from .strategies import all_strategies
-from .transfer_flow import FireStore, Transfer
+from .transfer_flows import TransferFlows, Transfer
 from .types import BankClient
 
 
 class AutomateTransfers:
-    def __init__(self, bank_client: BankClient, store: FireStore):
+    def __init__(self, bank_client: BankClient, store: TransferFlows):
         self.bank_client = bank_client
         self.store = store
 
     def run(self):
-        flows_all = self.store.get_transfer_flows()
+        flows_all = self.store.get_flows()
         flows_by_source = groupby(flows_all, key=lambda x: x.source_iban)
 
         for source_iban, group in flows_by_source:
@@ -24,11 +24,11 @@ class AutomateTransfers:
 
             for _, group_ in grouped_flows:
                 flows = list(group_)
-                for flow in filter(lambda a: a.type != "percentage", flows):
+                for flow in filter(lambda a: a.strategy_type != "percentage", flows):
                     remainder = self._process_transfer_flow(flow, remainder)
 
                 original_remainder = remainder
-                for flow in filter(lambda a: a.type == "percentage", flows):
+                for flow in filter(lambda a: a.strategy_type == "percentage", flows):
                     remainder = self._process_transfer_flow(
                         flow,
                         remainder,
@@ -42,7 +42,7 @@ class AutomateTransfers:
         *,
         original_remainder: Optional[Decimal] = None,
     ):
-        strategy = all_strategies.get(transfer_flow.type)
+        strategy = all_strategies.get(transfer_flow.strategy_type)
         amount = strategy(
             transfer_flow,
             original_remainder if original_remainder else remainder,

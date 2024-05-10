@@ -8,8 +8,7 @@ from lib.common_strategies import (
     fixed_strategy,
     percentage_strategy,
 )
-
-from .transfer_flow import Transfer
+from .transfer_flows import Transfer
 from .types import BankClient
 
 

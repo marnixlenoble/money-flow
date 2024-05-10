@@ -7,7 +7,7 @@ from firebase_functions import scheduler_fn
 from firebase_functions.params import StringParam
 
 from src.kraken_client import KrakenClient
-from src.orders import FireStore
+from src.order_flows import OrderFlows
 
 load_dotenv()
 
@@ -33,7 +33,7 @@ def monthly_sorter(_event: scheduler_fn.ScheduledEvent):
     api_key = os.environ.get(KRAKEN_API_KEY_SECRET_NAME.value)
     private_key = os.environ.get(KRAKEN_PRIVATE_KEY_SECRET_NAME.value)
     client = firestore.client()
-    _store = FireStore(client=client)
+    _store = OrderFlows(client=client)
 
     _kraken = KrakenClient(api_key=api_key, private_key=private_key)
 

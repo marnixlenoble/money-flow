@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 from firebase_admin import firestore, initialize_app
 from firebase_functions import scheduler_fn
 from firebase_functions.params import StringParam
-from src import ApiContextSecretLoader, AutomateTransfers, BunqClient, FireStore
+
+from src import ApiContextSecretLoader, AutomateTransfers, BunqClient, TransferFlows
 from src.security_monkey_patch import is_valid_response_body
 
 load_dotenv()
@@ -39,7 +40,7 @@ def bunq_monthly_sorter(_event: scheduler_fn.ScheduledEvent):
     logging.basicConfig(level=logging.INFO)
     api_key = os.environ.get(BUNQ_API_KEY_SECRET_NAME.value)
     client = firestore.client()
-    store_ = FireStore(client=client)
+    store_ = TransferFlows(client=client)
 
     bunq_ = BunqClient(
         api_key=api_key,

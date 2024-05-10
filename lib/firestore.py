@@ -1,35 +1,29 @@
-from dataclasses import dataclass
+from abc import abstractmethod
 from decimal import Decimal
-from typing import Optional, Union
+from typing import Optional, Union, TypeVar, List
 
 from google.cloud.firestore import Client
 
-from lib.common_strategies import Flow
-
-
-@dataclass
-class Transfer(Flow):
-    target_iban: str
-    target_iban_name: str
-    source_iban: str
-
-    def target(self):
-        return self.target_iban_name
-
-    def action_label(self):
-        return "transfer"
+T = TypeVar("T")
 
 
 class FireStore:
+    COLLECTION: str
+
     def __init__(self, client: Client):
         self.client = client
 
-    def get_transfer_flows(self):
-        data = self.client.collection("transfer_flows").stream()
+    @abstractmethod
+    def create_type(self, **kwargs) -> T:
+        ...
 
-        def transform_data(doc):
+    def get_flows(self) -> List[T]:
+        data = self.client.collection(self.COLLECTION).stream()
+
+        def transform_data(doc) -> T:
             kwargs: dict = doc.to_dict()
-            amount = kwargs.pop("value")
+            value = kwargs.pop("value")
+
             minimum_amount: Optional[Union[str, Decimal]] = kwargs.pop("minimum", None)
             maximum_amount: Optional[Union[str, Decimal]] = kwargs.pop("maximum", None)
             if minimum_amount is not None:
@@ -38,9 +32,9 @@ class FireStore:
             if maximum_amount is not None:
                 maximum_amount = Decimal(maximum_amount)
 
-            return Transfer(
+            return self.create_type(
                 **kwargs,
-                value=Decimal(amount),
+                value=Decimal(value),
                 minimum_amount=minimum_amount,
                 maximum_amount=maximum_amount,
             )
