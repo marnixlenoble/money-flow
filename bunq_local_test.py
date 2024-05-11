@@ -1,8 +1,9 @@
 from decimal import Decimal
 from unittest.mock import MagicMock, Mock, call
 
-from functions.bunq_money_flow.src.money_flow import AutomateTransfers
+from functions.bunq_money_flow.src import BankClientAdapter, all_strategies
 from functions.bunq_money_flow.src.transfer_flows import Transfer
+from lib.flow_processor import FlowProcessor
 
 default_payment_kwargs = {
     "description": "test description",
@@ -17,15 +18,17 @@ class TestTopUpTransfer:
         self.bunq_ = MagicMock()
         self.store_ = MagicMock()
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("1000.00"))
-        self.automate_transfers = AutomateTransfers(
-            bank_client=self.bunq_, store=self.store_
+        self.flow_processor = FlowProcessor(
+            client_adapter=BankClientAdapter(self.bunq_),
+            store=self.store_,
+            strategies=all_strategies,
         )
 
     def test_when_value_is_greater_than_remainder_expect_payment_with_remainder_as_amount(
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_transfers = Mock(
+        self.store_.get_flows = Mock(
             return_value=[
                 Transfer(
                     value=Decimal("99999999.00"),
@@ -40,7 +43,7 @@ class TestTopUpTransfer:
             Decimal("0.00"),
         ]
 
-        self.automate_transfers.run()
+        self.flow_processor.run()
 
         self.bunq_.make_payment.assert_called_once_with(
             amount=Decimal("500.00"), **default_payment_kwargs
@@ -50,7 +53,7 @@ class TestTopUpTransfer:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_transfers = Mock(
+        self.store_.get_flows = Mock(
             return_value=[
                 Transfer(
                     value=Decimal("2000.00"),
@@ -61,7 +64,7 @@ class TestTopUpTransfer:
         )
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("1970.00"))
 
-        self.automate_transfers.run()
+        self.flow_processor.run()
 
         self.bunq_.make_payment.assert_any_call(
             amount=Decimal("30.00"),
@@ -72,7 +75,7 @@ class TestTopUpTransfer:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_transfers = Mock(
+        self.store_.get_flows = Mock(
             return_value=[
                 Transfer(
                     value=Decimal("2000.00"),
@@ -84,7 +87,7 @@ class TestTopUpTransfer:
         )
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("1900.00"))
 
-        self.automate_transfers.run()
+        self.flow_processor.run()
 
         self.bunq_.make_payment.assert_not_called()
 
@@ -92,7 +95,7 @@ class TestTopUpTransfer:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_transfers = Mock(
+        self.store_.get_flows = Mock(
             return_value=[
                 Transfer(
                     value=Decimal("2000.00"),
@@ -104,7 +107,7 @@ class TestTopUpTransfer:
         )
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("1900.00"))
 
-        self.automate_transfers.run()
+        self.flow_processor.run()
 
         self.bunq_.make_payment.assert_any_call(
             amount=Decimal("100.00"),
@@ -115,7 +118,7 @@ class TestTopUpTransfer:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_transfers = Mock(
+        self.store_.get_flows = Mock(
             return_value=[
                 Transfer(
                     value=Decimal("2000.00"),
@@ -127,7 +130,7 @@ class TestTopUpTransfer:
         )
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("1900.00"))
 
-        self.automate_transfers.run()
+        self.flow_processor.run()
 
         self.bunq_.make_payment.assert_any_call(
             amount=Decimal("50.00"),
@@ -140,15 +143,17 @@ class TestPercentageTransfer:
         self.bunq_ = MagicMock()
         self.store_ = MagicMock()
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("500.00"))
-        self.automate_transfers = AutomateTransfers(
-            bank_client=self.bunq_, store=self.store_
+        self.flow_processor = FlowProcessor(
+            client_adapter=BankClientAdapter(self.bunq_),
+            store=self.store_,
+            strategies=all_strategies,
         )
 
     def test_when_percentage_is_100_expect_total_remainder_in_payment(
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_transfers = Mock(
+        self.store_.get_flows = Mock(
             return_value=[
                 Transfer(
                     value=Decimal("100.00"),
@@ -158,7 +163,7 @@ class TestPercentageTransfer:
             ]
         )
 
-        self.automate_transfers.run()
+        self.flow_processor.run()
 
         self.bunq_.make_payment.assert_called_once_with(
             amount=Decimal("500.00"), **default_payment_kwargs
@@ -168,7 +173,7 @@ class TestPercentageTransfer:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_transfers = Mock(
+        self.store_.get_flows = Mock(
             return_value=[
                 Transfer(
                     value=Decimal("10.00"),
@@ -183,7 +188,7 @@ class TestPercentageTransfer:
             ]
         )
 
-        self.automate_transfers.run()
+        self.flow_processor.run()
 
         self.bunq_.make_payment.assert_any_call(
             amount=Decimal("50.00"), **default_payment_kwargs
@@ -197,7 +202,7 @@ class TestPercentageTransfer:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_transfers = Mock(
+        self.store_.get_flows = Mock(
             return_value=[
                 Transfer(
                     value=Decimal("00.00"),
@@ -208,7 +213,7 @@ class TestPercentageTransfer:
         )
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("2500.00"))
 
-        self.automate_transfers.run()
+        self.flow_processor.run()
 
         self.bunq_.make_payment.assert_not_called()
 
@@ -216,7 +221,7 @@ class TestPercentageTransfer:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_transfers = Mock(
+        self.store_.get_flows = Mock(
             return_value=[
                 Transfer(
                     value=Decimal("100.00"),
@@ -228,7 +233,7 @@ class TestPercentageTransfer:
         )
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("500.00"))
 
-        self.automate_transfers.run()
+        self.flow_processor.run()
 
         self.bunq_.make_payment.assert_not_called()
 
@@ -236,7 +241,7 @@ class TestPercentageTransfer:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_transfers = Mock(
+        self.store_.get_flows = Mock(
             return_value=[
                 Transfer(
                     value=Decimal("100.00"),
@@ -247,7 +252,7 @@ class TestPercentageTransfer:
             ]
         )
 
-        self.automate_transfers.run()
+        self.flow_processor.run()
 
         self.bunq_.make_payment.assert_called_with(
             amount=Decimal("500.00"),
@@ -258,7 +263,7 @@ class TestPercentageTransfer:
         self,
     ):
         self.bunq_.make_payment = Mock()
-        self.store_.get_transfers = Mock(
+        self.store_.get_flows = Mock(
             return_value=[
                 Transfer(
                     value=Decimal("100.00"),
@@ -269,7 +274,7 @@ class TestPercentageTransfer:
             ]
         )
 
-        self.automate_transfers.run()
+        self.flow_processor.run()
 
         self.bunq_.make_payment.assert_called_with(
             amount=Decimal("200.00"),
@@ -284,14 +289,16 @@ class TestFixedTransfer:
         self.bunq_.make_payment = Mock()
 
         self.store_ = MagicMock()
-        self.automate_transfers = AutomateTransfers(
-            bank_client=self.bunq_, store=self.store_
+        self.flow_processor = FlowProcessor(
+            client_adapter=BankClientAdapter(self.bunq_),
+            store=self.store_,
+            strategies=all_strategies,
         )
 
     def test_when_amount_available_expect_amount_in_payment(
         self,
     ):
-        self.store_.get_transfers = Mock(
+        self.store_.get_flows = Mock(
             return_value=[
                 Transfer(
                     value=Decimal("200.00"),
@@ -301,7 +308,7 @@ class TestFixedTransfer:
             ]
         )
 
-        self.automate_transfers.run()
+        self.flow_processor.run()
 
         self.bunq_.make_payment.assert_called_once_with(
             amount=Decimal("200.00"), **default_payment_kwargs
@@ -310,7 +317,7 @@ class TestFixedTransfer:
     def test_when_amount_unavailable_expect_available_amount_in_payment(
         self,
     ):
-        self.store_.get_transfers = Mock(
+        self.store_.get_flows = Mock(
             return_value=[
                 Transfer(
                     value=Decimal("700.00"),
@@ -320,7 +327,7 @@ class TestFixedTransfer:
             ]
         )
 
-        self.automate_transfers.run()
+        self.flow_processor.run()
 
         self.bunq_.make_payment.assert_called_once_with(
             amount=Decimal("500.00"), **default_payment_kwargs
@@ -329,7 +336,7 @@ class TestFixedTransfer:
     def test_when_amount_smaller_than_minimum_expect_no_payment(
         self,
     ):
-        self.store_.get_transfers = Mock(
+        self.store_.get_flows = Mock(
             return_value=[
                 Transfer(
                     value=Decimal("1000.00"),
@@ -340,7 +347,7 @@ class TestFixedTransfer:
             ]
         )
 
-        self.automate_transfers.run()
+        self.flow_processor.run()
 
         self.bunq_.make_payment.assert_not_called()
 
@@ -353,8 +360,10 @@ class TestMixedTransfer:
 
         self.store_ = MagicMock()
 
-        self.automate_transfers = AutomateTransfers(
-            bank_client=self.bunq_, store=self.store_
+        self.flow_processor = FlowProcessor(
+            client_adapter=BankClientAdapter(self.bunq_),
+            store=self.store_,
+            strategies=all_strategies,
         )
 
         self.expected_transfers = [
@@ -389,7 +398,7 @@ class TestMixedTransfer:
                 description="top up",
             ),
         ]
-        self.store_.get_transfers = Mock(
+        self.store_.get_flows = Mock(
             return_value=[
                 Transfer(
                     value=Decimal("4000.00"),
@@ -437,7 +446,7 @@ class TestMixedTransfer:
             Decimal("189.56"),
         ]
 
-        self.automate_transfers.run()
+        self.flow_processor.run()
 
         self.bunq_.make_payment.assert_has_calls(
             [
@@ -456,7 +465,7 @@ class TestMixedTransfer:
             Decimal("189.56"),
         ]
 
-        self.automate_transfers.run()
+        self.flow_processor.run()
 
         self.bunq_.make_payment.assert_has_calls(
             [
@@ -472,7 +481,7 @@ class TestMixedTransfer:
             Decimal("3800.00"),
             Decimal("189.56"),
         ]
-        self.store_.get_transfers = Mock(
+        self.store_.get_flows = Mock(
             return_value=[
                 Transfer(
                     value=Decimal("4000.00"),
@@ -514,7 +523,7 @@ class TestMixedTransfer:
             ]
         )
 
-        self.automate_transfers.run()
+        self.flow_processor.run()
 
         self.bunq_.make_payment.assert_has_calls(
             [

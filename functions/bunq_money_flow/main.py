@@ -7,7 +7,14 @@ from firebase_admin import firestore, initialize_app
 from firebase_functions import scheduler_fn
 from firebase_functions.params import StringParam
 
-from src import ApiContextSecretLoader, AutomateTransfers, BunqClient, TransferFlows
+from lib.flow_processor import FlowProcessor
+from src import (
+    ApiContextSecretLoader,
+    BunqClient,
+    TransferFlows,
+    BankClientAdapter,
+    all_strategies,
+)
 from src.security_monkey_patch import is_valid_response_body
 
 load_dotenv()
@@ -54,4 +61,7 @@ def bunq_monthly_sorter(_event: scheduler_fn.ScheduledEvent):
     )
     bunq_.connect()
 
-    AutomateTransfers(bank_client=bunq_, store=store_).run()
+    processor = FlowProcessor(
+        client_adapter=BankClientAdapter(bunq_), store=store_, strategies=all_strategies
+    )
+    processor.run()

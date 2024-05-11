@@ -8,15 +8,15 @@ from lib.common_strategies import (
     fixed_strategy,
     percentage_strategy,
 )
+from lib.flow_processor import ClientAdapter
 from .transfer_flows import Transfer
-from .types import BankClient
 
 
 def top_up_strategy(
-    transfer: Transfer, remainder: Decimal, *, bank_client: BankClient
+    transfer: Transfer, remainder: Decimal, *, bank_client: ClientAdapter
 ) -> Decimal:
     logging.info(f"Attempting to top up {transfer.description} to {transfer.value}.")
-    balance = bank_client.get_balance_by_iban(iban=transfer.target_iban)
+    balance = bank_client.get_balance(source=transfer.target_iban)
     amount = transfer.value - balance
     if amount < 0:
         logging.info(f"\t Skipping transfer. Balance is already sufficient.")

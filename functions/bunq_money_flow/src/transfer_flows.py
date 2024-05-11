@@ -18,6 +18,10 @@ class Transfer(Flow):
     def action_label(self):
         return "transfer"
 
+    @property
+    def source(self):
+        return self.source_iban
+
 
 class TransferFlows(FireStore):
     COLLECTION = "transfer_flows"

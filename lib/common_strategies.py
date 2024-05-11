@@ -16,6 +16,11 @@ class Flow:
 
     @property
     @abstractmethod
+    def source(self):
+        ...
+
+    @property
+    @abstractmethod
     def target_label(self):
         ...
 
