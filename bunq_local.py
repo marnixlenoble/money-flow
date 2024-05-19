@@ -6,12 +6,7 @@ from bunq.sdk.security import security
 from dotenv import load_dotenv
 from firebase_admin import credentials, firestore, initialize_app
 
-from functions.bunq_money_flow.src import (
-    BunqClient,
-    BankClientAdapter,
-    TransferFlows,
-    all_strategies,
-)
+from functions.bunq_money_flow.src import BunqClient, BankClientAdapter, TransferFlows
 from functions.bunq_money_flow.src.security_monkey_patch import is_valid_response_body
 from lib.flow_processor import FlowProcessor
 
@@ -58,6 +53,4 @@ if __name__ == "__main__":
     )
     bunq_.connect()
 
-    FlowProcessor(
-        BankClientAdapter(bunq_), store=store_, strategies=all_strategies
-    ).run()
+    FlowProcessor(BankClientAdapter(bunq_), store=store_).run()

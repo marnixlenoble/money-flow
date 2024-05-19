@@ -1,12 +1,16 @@
 from decimal import Decimal
 from itertools import groupby
-from typing import Optional, Protocol
+from typing import Optional, Protocol, Dict, Callable
 
-from .common_strategies import Flow
+from .common_strategies import Flow, default_strategies
 from .firestore import FireStore
 
 
 class ClientAdapter(Protocol):
+    @property
+    def strategies(self) -> Dict[str, Callable[[Flow, Decimal], Decimal]]:
+        ...
+
     def handle_processed_flow(self, flow: Flow, amount: Decimal) -> None:
         ...
 
@@ -16,11 +20,16 @@ class ClientAdapter(Protocol):
 
 class FlowProcessor:
     def __init__(
-        self, client_adapter: ClientAdapter, store: FireStore, strategies: dict
+        self,
+        client_adapter: ClientAdapter,
+        store: FireStore,
     ):
         self.client_adapter = client_adapter
         self.store = store
-        self.strategies = strategies
+        self.strategies = {
+            **default_strategies,
+            **(client_adapter.strategies if client_adapter.strategies else {}),
+        }
 
     def run(self):
         flows_all = self.store.get_flows()
@@ -53,11 +62,7 @@ class FlowProcessor:
         original_remainder: Optional[Decimal] = None,
     ):
         strategy = self.strategies.get(flow.strategy_type)
-        amount = strategy(
-            flow,
-            original_remainder if original_remainder else remainder,
-            bank_client=self.client_adapter,
-        )
+        amount = strategy(flow, original_remainder if original_remainder else remainder)
         if amount > 0:
             self.client_adapter.handle_processed_flow(amount=amount, flow=flow)
 

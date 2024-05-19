@@ -64,7 +64,7 @@ def _check_remainder(amount: Decimal, *, remainder: Decimal) -> Decimal:
         return remainder
 
 
-def fixed_strategy(flow: Flow, remainder: Decimal, *_, **__) -> Decimal:
+def fixed_strategy(flow: Flow, remainder: Decimal) -> Decimal:
     logging.info(
         f"Attempting to {flow.action_label} {flow.value} to {flow.description}."
     )
@@ -78,7 +78,7 @@ def fixed_strategy(flow: Flow, remainder: Decimal, *_, **__) -> Decimal:
     return amount
 
 
-def percentage_strategy(flow: Flow, remainder: Decimal, *_, **__) -> Decimal:
+def percentage_strategy(flow: Flow, remainder: Decimal) -> Decimal:
     logging.info(
         f"Attempting to {flow.action_label} {flow.value}% to {flow.description}."
     )
@@ -89,3 +89,9 @@ def percentage_strategy(flow: Flow, remainder: Decimal, *_, **__) -> Decimal:
         logging.info(f"\t Need to {flow.action_label} {amount} to {flow.target_label}.")
 
     return amount
+
+
+default_strategies = {
+    "fixed": fixed_strategy,
+    "percentage": percentage_strategy,
+}

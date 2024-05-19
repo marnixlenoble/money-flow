@@ -1,7 +1,7 @@
 from decimal import Decimal
 from unittest.mock import MagicMock, Mock, call
 
-from functions.bunq_money_flow.src import BankClientAdapter, all_strategies
+from functions.bunq_money_flow.src import BankClientAdapter
 from functions.bunq_money_flow.src.transfer_flows import Transfer
 from lib.flow_processor import FlowProcessor
 
@@ -19,9 +19,7 @@ class TestTopUpTransfer:
         self.store_ = MagicMock()
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("1000.00"))
         self.flow_processor = FlowProcessor(
-            client_adapter=BankClientAdapter(self.bunq_),
-            store=self.store_,
-            strategies=all_strategies,
+            client_adapter=BankClientAdapter(self.bunq_), store=self.store_
         )
 
     def test_when_value_is_greater_than_remainder_expect_payment_with_remainder_as_amount(
@@ -144,9 +142,7 @@ class TestPercentageTransfer:
         self.store_ = MagicMock()
         self.bunq_.get_balance_by_iban = Mock(return_value=Decimal("500.00"))
         self.flow_processor = FlowProcessor(
-            client_adapter=BankClientAdapter(self.bunq_),
-            store=self.store_,
-            strategies=all_strategies,
+            client_adapter=BankClientAdapter(self.bunq_), store=self.store_
         )
 
     def test_when_percentage_is_100_expect_total_remainder_in_payment(
@@ -290,9 +286,7 @@ class TestFixedTransfer:
 
         self.store_ = MagicMock()
         self.flow_processor = FlowProcessor(
-            client_adapter=BankClientAdapter(self.bunq_),
-            store=self.store_,
-            strategies=all_strategies,
+            client_adapter=BankClientAdapter(self.bunq_), store=self.store_
         )
 
     def test_when_amount_available_expect_amount_in_payment(
@@ -361,9 +355,7 @@ class TestMixedTransfer:
         self.store_ = MagicMock()
 
         self.flow_processor = FlowProcessor(
-            client_adapter=BankClientAdapter(self.bunq_),
-            store=self.store_,
-            strategies=all_strategies,
+            client_adapter=BankClientAdapter(self.bunq_), store=self.store_
         )
 
         self.expected_transfers = [

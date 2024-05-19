@@ -13,7 +13,6 @@ from src import (
     BunqClient,
     TransferFlows,
     BankClientAdapter,
-    all_strategies,
 )
 from src.security_monkey_patch import is_valid_response_body
 
@@ -61,7 +60,5 @@ def bunq_monthly_sorter(_event: scheduler_fn.ScheduledEvent):
     )
     bunq_.connect()
 
-    processor = FlowProcessor(
-        client_adapter=BankClientAdapter(bunq_), store=store_, strategies=all_strategies
-    )
+    processor = FlowProcessor(client_adapter=BankClientAdapter(bunq_), store=store_)
     processor.run()
