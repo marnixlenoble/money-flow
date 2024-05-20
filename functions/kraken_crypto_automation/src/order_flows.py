@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Optional
 
 from lib.common_strategies import Flow
 from lib.firestore import FireStore
@@ -11,7 +10,6 @@ class Order(Flow):
     pair: str
     type: str = None  # buy or sell
     order_type: str = None  # limit, market, etc
-    order_priority: Optional[int] = 1
 
     @property
     def source(self):
@@ -27,7 +25,7 @@ class Order(Flow):
 
 
 class OrderFlows(FireStore):
-    COLLECTION = "order_flows"
+    COLLECTION = "crypto_order_flows"
 
     def create_type(self, **kwargs) -> Order:
         return Order(**kwargs)

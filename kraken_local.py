@@ -1,9 +1,15 @@
+import logging
 import os
 
 from dotenv import load_dotenv
 from firebase_admin import credentials, initialize_app, firestore
 
 from functions.kraken_crypto_automation.src.kraken_client import KrakenClient
+from functions.kraken_crypto_automation.src.kraken_client_adapter import (
+    KrakenClientAdapter,
+)
+from functions.kraken_crypto_automation.src.order_flows import OrderFlows
+from lib.flow_processor import FlowProcessor
 
 load_dotenv()
 
@@ -17,14 +23,13 @@ DEVICE_DESCRIPTION = os.getenv("DESCRIPTION")
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     cred = credentials.Certificate(GOOGLE_FIRESTORE_CONFIG)
     initialize_app(cred)
     client = firestore.client()
+    store = OrderFlows(client=client)
 
-    # store_ = OrderFlows(client=client)
     kraken = KrakenClient(api_key=KRAKEN_API_KEY, private_key=KRAKEN_PRIVATE_KEY)
-    balances = kraken.get_balances()
-    order = kraken.add_order(pair="XBTUSD", price="2.00", volume="1", type="buy")
 
-    print(balances)
-    print(order)
+    processor = FlowProcessor(client_adapter=KrakenClientAdapter(kraken), store=store)
+    processor.run()
